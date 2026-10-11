@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prediction detail | MarketLens</title>
+  <link rel="stylesheet" href="/frontend/css/style.css">
+  <script src="/frontend/js/prediction.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">M</span> MarketLens</a><nav aria-label="Main navigation"><a href="/">Dashboard</a><a class="active" href="/history.html">History</a><a href="/about.html">About</a></nav><span class="top-label">EXPERIMENTAL MODEL</span></header>
+  <main class="page-shell narrow-shell">
+    <a class="back-link" href="/history.html">← Back to history</a>
+    <section class="page-heading"><div><p class="eyebrow">ANALYSIS RECORD</p><h1>Prediction detail</h1><p class="muted">Review this experimental classification and update its actual outcome.</p></div></section>
+    <p id="detail-message" class="form-message" role="status" aria-live="polite">Loading prediction…</p>
+    <section id="prediction-detail" class="panel detail-grid hidden">
+      <div><img id="detail-image" class="detail-image hidden" alt="Chart image for this prediction"><div id="image-unavailable" class="empty-state"><p>Original chart images are not stored by this application.</p></div></div>
+      <div><div id="detail-direction" class="direction-card"><span class="direction-dot"></span><div><span class="eyebrow">MODEL CLASSIFICATION</span><h2 id="detail-label"></h2></div></div>
+        <dl class="result-details stacked"><div><dt>Confidence score</dt><dd id="detail-confidence"></dd></div><div><dt>Symbol</dt><dd id="detail-symbol"></dd></div><div><dt>Timeframe</dt><dd id="detail-timeframe"></dd></div><div><dt>Model version</dt><dd id="detail-version"></dd></div><div><dt>Prediction time</dt><dd id="detail-created"></dd></div><div><dt>Image SHA-256</dt><dd id="detail-hash" class="hash-value"></dd></div><div><dt>Actual outcome</dt><dd id="detail-actual"></dd></div><div><dt>Observed at</dt><dd id="detail-observed"></dd></div></dl>
+      </div>
+    </section>
+    <section id="outcome-panel" class="panel hidden"><p class="eyebrow">FOLLOW-UP</p><h2>Record actual candle outcome</h2><form id="outcome-form" class="outcome-form"><label for="actual-direction">Actual direction</label><select id="actual-direction" required><option value="">Choose outcome</option><option value="Bullish">Bullish</option><option value="Bearish">Bearish</option></select><button class="button button-primary" type="submit">Save outcome</button></form><p class="muted small">Only compare with the next candle corresponding to this prediction's timeframe.</p></section>
+    <aside class="disclaimer"><strong>Research project, not financial advice.</strong> Model confidence is not necessarily calibrated probability.</aside>
+  </main>
+  <footer class="site-footer"><span>MarketLens · Educational prototype</span><a href="/about.html">Model limitations</a></footer>
+</body>
+</html>

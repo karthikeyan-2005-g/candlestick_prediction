@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prediction history | MarketLens</title>
+  <link rel="stylesheet" href="/frontend/css/style.css">
+  <script src="/frontend/js/history.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">M</span> MarketLens</a><nav aria-label="Main navigation"><a href="/">Dashboard</a><a class="active" href="/history.html">History</a><a href="/about.html">About</a></nav><span class="top-label">EXPERIMENTAL MODEL</span></header>
+  <main class="page-shell">
+    <section class="page-heading"><div><p class="eyebrow">PREDICTION LOG</p><h1>History & outcomes</h1><p class="muted">Review stored classifications and compare with observed next-candle direction.</p></div></section>
+    <section class="panel">
+      <form id="filter-form" class="filter-row"><label for="symbol-filter">Filter by symbol</label><input id="symbol-filter" maxlength="24" placeholder="All symbols"><button class="button button-secondary" type="submit">Apply filter</button><button id="clear-filter" class="button button-quiet" type="button">Clear</button></form>
+      <p id="history-message" class="form-message" role="status" aria-live="polite"></p>
+      <div id="history-table" class="table-wrap"></div>
+      <div class="pagination"><button id="previous-page" class="button button-secondary" type="button" disabled>← Previous</button><span id="page-label" class="muted">Page 1</span><button id="next-page" class="button button-secondary" type="button" disabled>Next →</button></div>
+    </section>
+    <aside class="disclaimer"><strong>Research project, not financial advice.</strong> Recorded historical results are not a guarantee of future performance.</aside>
+  </main>
+  <footer class="site-footer"><span>MarketLens · Educational prototype</span><a href="/about.html">Model limitations</a></footer>
+</body>
+</html>

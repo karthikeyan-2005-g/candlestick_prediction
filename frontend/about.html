@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About | MarketLens</title>
+  <link rel="stylesheet" href="/frontend/css/style.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="brand-mark">M</span> MarketLens</a><nav aria-label="Main navigation"><a href="/">Dashboard</a><a href="/history.html">History</a><a class="active" href="/about.html">About</a></nav><span class="top-label">EXPERIMENTAL MODEL</span></header>
+  <main class="page-shell narrow-shell">
+    <section class="page-heading"><div><p class="eyebrow">PROJECT GUIDE</p><h1>About this system</h1><p class="muted">A learning-focused computer vision pipeline for historical chart images.</p></div></section>
+    <section class="panel prose">
+      <h2>Objective</h2><p>MarketLens demonstrates an end-to-end workflow: validate an uploaded chart, preprocess it consistently, classify it with a trained convolutional neural network (CNN), and save the result for later outcome comparison.</p>
+      <h2>Technology</h2><p>Python, Flask, SQLAlchemy, PostgreSQL, OpenCV, Pillow, PyTorch, Torchvision, scikit-learn, HTML, CSS, and vanilla JavaScript.</p>
+      <h2>Model overview</h2><p>The CNN accepts a 128 × 128 RGB image scaled to values from 0 to 1. It has convolution, batch normalization, ReLU, pooling, dropout, and fully connected layers. The model returns two classes: Bearish and Bullish. If the highest softmax score is below a configurable threshold, the user-facing classification is Uncertain.</p>
+      <h2>Dataset and labels</h2><p>Training images should be generated from permitted historical OHLCV data. Each image shows only bars up to its prediction timestamp. Its label is the next candle's close versus open; exact dojis are excluded. Split the chronological raw bars before generating windows, and reserve the latest test period for one final evaluation. The repository does not contain market data or a pretrained checkpoint.</p>
+      <h2>Understanding the score</h2><p>Softmax confidence describes the model's relative score among its two trained classes. It is not necessarily calibrated: for example, a 0.8 score does not prove an 80% chance of correctness. Calibration needs separate evaluation data. Accuracy, precision, recall, and F1 from historical unseen test data describe only that test period and may not generalize to future markets.</p>
+      <h2>Limitations and risk</h2><p>Chart formatting, zoom, colors, indicators, instrument, and timeframe may shift the image distribution. Financial series are non-stationary and a chart-only prediction omits important context such as costs, liquidity, and news. A classifier result does not establish a profitable strategy.</p>
+      <div class="notice"><strong>Not financial advice.</strong> This project is for education and experimentation. Do not use its output as the sole basis for financial decisions.</div>
+      <p><a class="text-link" href="/">Return to dashboard →</a></p>
+    </section>
+  </main>
+  <footer class="site-footer"><span>MarketLens · Educational prototype</span><a href="/history.html">Prediction history</a></footer>
+</body>
+</html>
