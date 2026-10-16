@@ -1,5 +1,7 @@
 "use strict";
 
+const API_BASE = window.location.origin.includes(":5000") ? "" : "http://127.0.0.1:5000";
+
 const predictionId = new URLSearchParams(window.location.search).get("id");
 const message = document.querySelector("#detail-message");
 const detailSection = document.querySelector("#prediction-detail");
@@ -46,7 +48,7 @@ async function loadPrediction() {
     return;
   }
   try {
-    const response = await fetch(`/api/history/${encodeURIComponent(predictionId)}`);
+    const response = await fetch(`${API_BASE}/api/history/${encodeURIComponent(predictionId)}`);
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "Could not load prediction.");
     render(payload.data);
@@ -62,7 +64,7 @@ document.querySelector("#outcome-form").addEventListener("submit", async (event)
   const button = event.currentTarget.querySelector("button");
   button.disabled = true;
   try {
-    const response = await fetch(`/api/history/${encodeURIComponent(predictionId)}/outcome`, {
+    const response = await fetch(`${API_BASE}/api/history/${encodeURIComponent(predictionId)}/outcome`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ actual_direction: document.querySelector("#actual-direction").value }),
@@ -77,5 +79,16 @@ document.querySelector("#outcome-form").addEventListener("submit", async (event)
     button.disabled = false;
   }
 });
+
+if (window.location.pathname.includes("/frontend/")) {
+  document.querySelectorAll("nav a, a.brand, footer a").forEach((link) => {
+    const href = link.getAttribute("href");
+    if (href === "/") {
+      link.href = "/frontend/index.html";
+    } else if (href && !href.startsWith("http") && !href.startsWith("/frontend/")) {
+      link.href = `/frontend/${href.replace(/^\//, "")}`;
+    }
+  });
+}
 
 loadPrediction();

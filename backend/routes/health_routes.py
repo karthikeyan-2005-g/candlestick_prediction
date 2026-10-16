@@ -20,8 +20,15 @@ def health():
         db.session.rollback()
         database_status = "unavailable"
 
-    prediction_service = current_app.extensions["prediction_service"]
-    model_status = "available" if prediction_service.is_available else "unavailable"
+    prediction_service = current_app.extensions.get("prediction_service")
+    is_model_available = False
+    if prediction_service is not None:
+        try:
+            is_model_available = bool(prediction_service.is_available)
+        except Exception:
+            is_model_available = False
+
+    model_status = "available" if is_model_available else "unavailable"
     overall_status = (
         "ok" if database_status == "ok" and model_status == "available" else "degraded"
     )
@@ -33,7 +40,7 @@ def health():
             "model": model_status,
             "model_message": (
                 None
-                if prediction_service.is_available
+                if is_model_available
                 else "A compatible trained model checkpoint is not available."
             ),
         }

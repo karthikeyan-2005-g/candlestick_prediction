@@ -1,5 +1,15 @@
 "use strict";
 
+const API_BASE = window.location.origin.includes(":5000") ? "" : "http://127.0.0.1:5000";
+
+function getPageUrl(path) {
+  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+  if (window.location.pathname.includes("/frontend/")) {
+    return `/frontend/${cleanPath}`;
+  }
+  return `/${cleanPath}`;
+}
+
 const tableHost = document.querySelector("#history-table");
 const message = document.querySelector("#history-message");
 const previousButton = document.querySelector("#previous-page");
@@ -73,7 +83,7 @@ function renderRows(records) {
     const action = document.createElement("td");
     const link = document.createElement("a");
     link.className = "text-link";
-    link.href = `/prediction.html?id=${encodeURIComponent(record.id)}`;
+    link.href = getPageUrl(`prediction.html?id=${encodeURIComponent(record.id)}`);
     link.textContent = "Details";
     action.append(link);
     row.append(action);
@@ -88,7 +98,7 @@ async function loadHistory() {
   const params = new URLSearchParams({ page: String(page), per_page: "20" });
   if (symbolFilter) params.set("symbol", symbolFilter);
   try {
-    const response = await fetch(`/api/history?${params.toString()}`);
+    const response = await fetch(`${API_BASE}/api/history?${params.toString()}`);
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "Could not load history.");
     renderRows(payload.data);
@@ -117,5 +127,16 @@ document.querySelector("#clear-filter").addEventListener("click", () => {
 });
 previousButton.addEventListener("click", () => { if (page > 1) { page -= 1; loadHistory(); } });
 nextButton.addEventListener("click", () => { if (page < pages) { page += 1; loadHistory(); } });
+
+if (window.location.pathname.includes("/frontend/")) {
+  document.querySelectorAll("nav a, a.brand, footer a").forEach((link) => {
+    const href = link.getAttribute("href");
+    if (href === "/") {
+      link.href = "/frontend/index.html";
+    } else if (href && !href.startsWith("http") && !href.startsWith("/frontend/")) {
+      link.href = `/frontend/${href.replace(/^\//, "")}`;
+    }
+  });
+}
 
 loadHistory();

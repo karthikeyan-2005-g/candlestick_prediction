@@ -21,7 +21,7 @@ def create_app(config_object: type | object | None = None) -> Flask:
         confidence_threshold=app.config["CONFIDENCE_THRESHOLD"],
     )
 
-    from backend.database import models as _models
+    from backend.database import models as _models  # noqa: F401
     from backend.routes.health_routes import health_bp
     from backend.routes.history_routes import history_bp
     from backend.routes.prediction_routes import prediction_bp

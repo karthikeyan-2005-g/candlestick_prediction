@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, Subset
@@ -46,13 +46,18 @@ def run_epoch(model, loader, criterion, device, optimizer=None):
             loss = criterion(logits, labels)
             if training:
                 loss.backward()
+                nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
         total_loss += float(loss.item()) * labels.size(0)
         predictions.extend(logits.argmax(dim=1).detach().cpu().tolist())
         targets.extend(labels.detach().cpu().tolist())
     if not targets:
         raise ValueError("Dataset partition contains no images.")
-    return total_loss / len(targets), accuracy_score(targets, predictions)
+    return (
+        total_loss / len(targets),
+        accuracy_score(targets, predictions),
+        balanced_accuracy_score(targets, predictions),
+    )
 
 
 def require_partition_images(data_dir: Path, partition: str) -> None:
@@ -278,8 +283,14 @@ def train(args: argparse.Namespace) -> dict[str, object]:
         num_workers=0,
     )
     model = CandlestickCNN().to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
+    total_train = len(train_data)
+    weight_down = total_train / (2.0 * max(1, train_counts.get(CLASS_TO_INDEX["Down"], 1)))
+    weight_up = total_train / (2.0 * max(1, train_counts.get(CLASS_TO_INDEX["Up"], 1)))
+    class_weights = torch.tensor([weight_down, weight_up], dtype=torch.float32, device=device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.05)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-5)
+    best_validation_score = -1.0
     best_validation_accuracy = -1.0
     best_validation_loss = float("inf")
     wait = 0
@@ -287,36 +298,44 @@ def train(args: argparse.Namespace) -> dict[str, object]:
 
     for epoch in range(1, args.epochs + 1):
         print(f"Starting epoch {epoch:03d}/{args.epochs}...", flush=True)
-        train_loss, train_accuracy = run_epoch(
+        train_loss, train_accuracy, train_balanced = run_epoch(
             model, train_loader, criterion, device, optimizer
         )
-        validation_loss, validation_accuracy = run_epoch(
+        validation_loss, validation_accuracy, validation_balanced = run_epoch(
             model, validation_loader, criterion, device
         )
+        scheduler.step()
         history.append(
             {
                 "epoch": epoch,
                 "train_loss": train_loss,
                 "train_accuracy": float(train_accuracy),
+                "train_balanced_accuracy": float(train_balanced),
                 "validation_loss": validation_loss,
                 "validation_accuracy": float(validation_accuracy),
+                "validation_balanced_accuracy": float(validation_balanced),
             }
         )
         print(
             f"Epoch {epoch:03d}/{args.epochs}: "
-            f"train loss={train_loss:.4f} accuracy={train_accuracy:.4f}; "
-            f"validation loss={validation_loss:.4f} accuracy={validation_accuracy:.4f}",
+            f"train loss={train_loss:.4f} acc={train_accuracy:.4f} bal={train_balanced:.4f}; "
+            f"val loss={validation_loss:.4f} acc={validation_accuracy:.4f} bal={validation_balanced:.4f}",
             flush=True,
         )
 
+        val_score = float(validation_balanced)
         improved = (
-            validation_accuracy > best_validation_accuracy
+            val_score > best_validation_score
             or (
-                validation_accuracy == best_validation_accuracy
-                and validation_loss < best_validation_loss
+                val_score == best_validation_score
+                and (
+                    validation_accuracy > best_validation_accuracy
+                    or (validation_accuracy == best_validation_accuracy and validation_loss < best_validation_loss)
+                )
             )
         )
         if improved:
+            best_validation_score = val_score
             best_validation_accuracy = float(validation_accuracy)
             best_validation_loss = validation_loss
             wait = 0
