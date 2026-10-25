@@ -243,11 +243,12 @@ def train(args: argparse.Namespace) -> dict[str, object]:
     if not full_train_data:
         raise ValueError(f"Training partition '{args.train_split}' contains no images.")
     groups = [archive_instrument_group(path) for path, _ in full_train_data.samples]
+    split_groups = None if getattr(args, "stratified", False) else groups
     train_indices, validation_indices = split_training_validation(
         full_train_data.targets,
         validation_fraction=args.validation_fraction,
         seed=args.seed,
-        groups=groups,
+        groups=split_groups,
     )
     train_data = Subset(full_train_data, train_indices)
     validation_data = Subset(full_train_data, validation_indices)
@@ -258,6 +259,10 @@ def train(args: argparse.Namespace) -> dict[str, object]:
     training_groups = sorted({groups[index] for index in train_indices})
     validation_groups = sorted({groups[index] for index in validation_indices})
     actual_validation_fraction = len(validation_data) / len(full_train_data)
+    validation_strategy = (
+        "stratified_random" if getattr(args, "stratified", False) else "instrument_prefix_group_holdout"
+    )
+    print(f"Validation strategy: {validation_strategy}")
     print(f"Training instrument groups: {training_groups}")
     print(f"Validation instrument groups: {validation_groups}")
     print(f"Actual validation fraction: {actual_validation_fraction:.3f}")
@@ -354,7 +359,7 @@ def train(args: argparse.Namespace) -> dict[str, object]:
                         "training_split": "Train",
                         "validation_fraction": args.validation_fraction,
                         "actual_validation_fraction": actual_validation_fraction,
-                        "validation_strategy": "instrument_prefix_group_holdout",
+                        "validation_strategy": validation_strategy,
                         "training_groups": training_groups,
                         "validation_groups": validation_groups,
                         "seed": args.seed,
@@ -396,6 +401,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-size", type=int, default=128)
     parser.add_argument("--patience", type=int, default=6)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--stratified", action="store_true", help="Use stratified split across instruments.")
     parser.add_argument(
         "--model-version",
         default=MODEL_VERSION,

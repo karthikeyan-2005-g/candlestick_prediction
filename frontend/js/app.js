@@ -475,6 +475,49 @@ function showPrediction(result) {
     detailLink.href =
       getPageUrl(`prediction.html?id=${encodeURIComponent(result.prediction_id)}`);
   }
+
+  // Web search market intelligence rendering
+  const webInsightBox = document.querySelector("#web-insight-box");
+  if (webInsightBox) {
+    if (result.web_search) {
+      const ws = result.web_search;
+      webInsightBox.classList.remove("hidden");
+      const sentimentBadge = document.querySelector("#web-sentiment-badge");
+      if (sentimentBadge) {
+        sentimentBadge.textContent = `${ws.sentiment} (${Math.round(ws.sentiment_score * 100)}%)`;
+        sentimentBadge.className = `badge ${(ws.sentiment || "neutral").toLowerCase()}`;
+      }
+      const summaryElem = document.querySelector("#web-search-summary");
+      if (summaryElem) {
+        summaryElem.textContent = ws.summary;
+      }
+      const sourcesList = document.querySelector("#web-sources-list");
+      if (sourcesList) {
+        sourcesList.replaceChildren();
+        if (Array.isArray(ws.sources) && ws.sources.length > 0) {
+          ws.sources.forEach((src) => {
+            const li = document.createElement("li");
+            li.className = "web-source-item";
+            const a = document.createElement("a");
+            a.href = src.url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = `↗ ${src.title}`;
+            li.append(a);
+            if (src.snippet) {
+              const snippet = document.createElement("div");
+              snippet.className = "web-source-snippet";
+              snippet.textContent = src.snippet;
+              li.append(snippet);
+            }
+            sourcesList.append(li);
+          });
+        }
+      }
+    } else {
+      webInsightBox.classList.add("hidden");
+    }
+  }
 }
 
 /* =========================================================
@@ -610,6 +653,11 @@ if (predictionForm && imageInput && predictButton) {
       "timeframe",
       timeframeInput ? timeframeInput.value : ""
     );
+
+    const webSearchCheckbox = document.querySelector("#web-search-checkbox");
+    if (webSearchCheckbox && webSearchCheckbox.checked) {
+      data.append("web_search", "true");
+    }
 
     predictButton.disabled = true;
 

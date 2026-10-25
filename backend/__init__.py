@@ -7,6 +7,7 @@ from flask import Flask
 
 from backend.extensions import db
 from backend.services.prediction_service import PredictionService
+from backend.services.web_search_service import WebSearchService
 
 
 def create_app(config_object: type | object | None = None) -> Flask:
@@ -20,6 +21,8 @@ def create_app(config_object: type | object | None = None) -> Flask:
         image_size=app.config["IMAGE_SIZE"],
         confidence_threshold=app.config["CONFIDENCE_THRESHOLD"],
     )
+
+    app.extensions["web_search_service"] = WebSearchService()
 
     from backend.database import models as _models  # noqa: F401
     from backend.routes.health_routes import health_bp

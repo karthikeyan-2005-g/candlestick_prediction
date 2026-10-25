@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -7,6 +8,8 @@ from backend.database.models import Prediction
 from backend.extensions import db
 from backend.services.image_service import ImageValidationError, validate_image_upload
 from backend.utils.validators import optional_text_field
+
+LOGGER = logging.getLogger(__name__)
 
 prediction_bp = Blueprint("prediction", __name__)
 
@@ -27,6 +30,7 @@ def predict():
         )
         symbol = optional_text_field(request.form.get("symbol"), "symbol", 24)
         timeframe = optional_text_field(request.form.get("timeframe"), "timeframe", 24)
+        enable_web_search = request.form.get("web_search", "").lower() in ("true", "1", "yes", "on")
     except ValueError as exc:
         return jsonify({"success": False, "error": {"code": "invalid_request", "message": str(exc)}}), 400
 
@@ -70,20 +74,75 @@ def predict():
             {"success": False, "error": {"code": "database_unavailable", "message": "Prediction could not be saved."}}
         ), 503
 
-    return jsonify(
-        {
-            "success": True,
-            "prediction": result.prediction,
-            "confidence": result.confidence,
-            "low_confidence": result.low_confidence,
-            "symbol": record.symbol,
-            "timeframe": record.timeframe,
-            "model_version": result.model_version,
-            "prediction_id": record.id,
-            "created_at": record.to_dict()["created_at"],
-            "message": (
-                "Experimental image-classification output. Dataset labels "
-                "have not been verified as future candle direction; not financial advice."
-            ),
-        }
-    ), 201
+    # Optional Web Search market analysis
+    web_analysis = None
+    if enable_web_search:
+        search_service = current_app.extensions.get("web_search_service")
+        if search_service:
+            try:
+                web_analysis = search_service.search_and_analyze(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    predicted_direction=result.prediction,
+                )
+            except Exception as exc:
+                LOGGER.warning("Web search error during prediction: %s", exc)
+                web_analysis = {
+                    "query": symbol or result.prediction,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "sentiment": "Neutral",
+                    "sentiment_score": 0.50,
+                    "summary": "Web search is currently unavailable. Displaying chart prediction only.",
+                    "sources": [],
+                }
+
+    response_payload = {
+        "success": True,
+        "prediction": result.prediction,
+        "confidence": result.confidence,
+        "low_confidence": result.low_confidence,
+        "symbol": record.symbol,
+        "timeframe": record.timeframe,
+        "model_version": result.model_version,
+        "prediction_id": record.id,
+        "created_at": record.to_dict()["created_at"],
+        "message": (
+            "Experimental image-classification output. Dataset labels "
+            "have not been verified as future candle direction; not financial advice."
+        ),
+    }
+
+    if web_analysis is not None:
+        response_payload["web_search"] = web_analysis
+
+    return jsonify(response_payload), 201
+
+
+@prediction_bp.route("/web-search", methods=["GET", "POST"])
+def search_market():
+    """Standalone endpoint for searching market news and technical context."""
+    if request.method == "POST":
+        data = request.get_json(silent=True) or request.form
+        symbol = data.get("symbol")
+        timeframe = data.get("timeframe")
+        prediction = data.get("prediction")
+    else:
+        symbol = request.args.get("symbol")
+        timeframe = request.args.get("timeframe")
+        prediction = request.args.get("prediction")
+
+    search_service = current_app.extensions.get("web_search_service")
+    if not search_service:
+        return jsonify({"success": False, "error": "Search service is unavailable."}), 503
+
+    try:
+        analysis = search_service.search_and_analyze(
+            symbol=symbol,
+            timeframe=timeframe,
+            predicted_direction=prediction,
+        )
+        return jsonify({"success": True, "data": analysis}), 200
+    except Exception as exc:
+        LOGGER.exception("Market web search failed")
+        return jsonify({"success": False, "error": str(exc)}), 500

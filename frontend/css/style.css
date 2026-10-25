@@ -142,3 +142,18 @@ tbody tr:hover { background: rgba(255,255,255,.018); }
   .detail-grid { grid-template-columns: 1fr; }
   .site-footer { padding-right: 16px; padding-left: 16px; }
 }
+
+/* Web Search Insights styling */
+.web-search-toggle-row { margin-top: 10px; margin-bottom: 12px; }
+.toggle-control { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; color: #a9bcc8; user-select: none; }
+.toggle-control input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--green); cursor: pointer; }
+.web-insight-card { margin-top: 16px; padding: 14px 16px; border: 1px solid #1e3347; border-radius: 9px; background: #0c1824; }
+.web-insight-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.web-insight-title { font-size: 11px; font-weight: 700; color: #82b1ff; letter-spacing: 0.04em; text-transform: uppercase; }
+.web-search-summary { font-size: 12px; line-height: 1.5; color: #d0dbe2; margin-bottom: 10px; }
+.web-sources-container { border-top: 1px solid #192b3c; padding-top: 8px; }
+.sources-label { font-size: 10px; font-weight: 600; color: #738a9c; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.web-sources-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.web-source-item a { color: #82b1ff; text-decoration: none; font-size: 11px; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.web-source-item a:hover { text-decoration: underline; }
+.web-source-snippet { font-size: 11px; color: #889ba8; line-height: 1.35; }

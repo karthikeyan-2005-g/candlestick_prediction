@@ -202,3 +202,30 @@ def _small_png():
     buffer = BytesIO()
     Image.new("RGB", (8, 8), "white").save(buffer, format="PNG")
     return buffer.getvalue()
+
+
+def test_web_search_endpoint(client):
+    response = client.get("/api/web-search?symbol=AAPL&timeframe=1d")
+    assert response.status_code == 200
+    data = response.get_json()["data"]
+    assert data["symbol"] == "AAPL"
+    assert "sentiment" in data
+    assert "summary" in data
+
+
+def test_prediction_with_web_search_option(client, png_bytes):
+    response = client.post(
+        "/api/predict",
+        data={
+            "image": (BytesIO(png_bytes), "chart.png"),
+            "symbol": "AAPL",
+            "timeframe": "1d",
+            "web_search": "true",
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 201
+    payload = response.get_json()
+    assert payload["success"] is True
+    assert "web_search" in payload
+    assert payload["web_search"]["symbol"] == "AAPL"
