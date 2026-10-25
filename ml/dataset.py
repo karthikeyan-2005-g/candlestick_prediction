@@ -13,7 +13,10 @@ from ml.preprocessing import rgb_array_to_tensor
 
 CLASS_TO_INDEX = {"Down": 0, "Up": 1}
 INDEX_TO_CLASS = ("Down", "Up")
-ARCHIVE_INSTRUMENT_FILENAME = re.compile(r"(?P<instrument>QQQ|SPY)_\d+", re.IGNORECASE)
+ARCHIVE_INSTRUMENT_FILENAME = re.compile(
+    r"(?P<instrument>QQQ|SPY|BTC|ETH|SOL|BNB|ADA|XRP|AVAX|DOGE|LINK|DOT)_\d+",
+    re.IGNORECASE,
+)
 
 
 def archive_instrument_group(path: str | Path) -> str:

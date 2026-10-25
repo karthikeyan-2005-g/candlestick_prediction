@@ -48,11 +48,44 @@ def predict():
 
     try:
         result = service.predict(image_bytes)
+
+        # Screen Analysis & Technical Pattern Recognition
+        screen_service = current_app.extensions.get("screen_analysis_service")
+        screen_result = None
+        if screen_service:
+            try:
+                screen_result = screen_service.analyze_chart(image_bytes)
+            except Exception as exc:
+                LOGGER.warning("Screen analysis failed: %s", exc)
+
+        # Confluence Fusion (CNN + Screen Analysis S/R, Pattern, Trend)
+        p_cnn_up = result.confidence if result.prediction == "Up" else (1.0 - result.confidence)
+        if screen_result:
+            pattern_bias = screen_result.neighbour_pattern["bias"]
+            sr_bias = screen_result.support_resistance["bias"]
+            trend_bias = screen_result.market_trend["bias"]
+            confluence_up = (
+                0.40 * p_cnn_up
+                + 0.35 * (pattern_bias + 0.5)
+                + 0.15 * (sr_bias + 0.5)
+                + 0.10 * (trend_bias + 0.5)
+            )
+            confluence_up = max(0.05, min(0.95, confluence_up))
+            if confluence_up >= 0.51:
+                final_prediction = "Up"
+                final_confidence = round(confluence_up, 4)
+            else:
+                final_prediction = "Down"
+                final_confidence = round(1.0 - confluence_up, 4)
+        else:
+            final_prediction = result.prediction
+            final_confidence = result.confidence
+
         record = Prediction(
             symbol=symbol,
             timeframe=timeframe,
-            prediction=result.prediction,
-            confidence=result.confidence,
+            prediction=final_prediction,
+            confidence=final_confidence,
             model_version=result.model_version,
             image_sha256=image_sha256,
         )
@@ -83,12 +116,12 @@ def predict():
                 web_analysis = search_service.search_and_analyze(
                     symbol=symbol,
                     timeframe=timeframe,
-                    predicted_direction=result.prediction,
+                    predicted_direction=final_prediction,
                 )
             except Exception as exc:
                 LOGGER.warning("Web search error during prediction: %s", exc)
                 web_analysis = {
-                    "query": symbol or result.prediction,
+                    "query": symbol or final_prediction,
                     "symbol": symbol,
                     "timeframe": timeframe,
                     "sentiment": "Neutral",
@@ -99,17 +132,22 @@ def predict():
 
     response_payload = {
         "success": True,
-        "prediction": result.prediction,
-        "confidence": result.confidence,
-        "low_confidence": result.low_confidence,
+        "prediction": final_prediction,
+        "confidence": final_confidence,
+        "low_confidence": final_confidence < current_app.config["CONFIDENCE_THRESHOLD"],
         "symbol": record.symbol,
         "timeframe": record.timeframe,
         "model_version": result.model_version,
         "prediction_id": record.id,
         "created_at": record.to_dict()["created_at"],
+        "screen_analysis": screen_result.to_dict() if screen_result else None,
+        "annotated_image": screen_result.annotated_image if screen_result else None,
+        "market_trend": screen_result.market_trend if screen_result else None,
+        "support_resistance": screen_result.support_resistance if screen_result else None,
+        "neighbour_pattern": screen_result.neighbour_pattern if screen_result else None,
         "message": (
-            "Experimental image-classification output. Dataset labels "
-            "have not been verified as future candle direction; not financial advice."
+            "Technical and image-classification output combining computer vision S/R analysis, "
+            "neighbour candlestick patterns, and trained neural network features. Not financial advice."
         ),
     }
 
@@ -117,6 +155,36 @@ def predict():
         response_payload["web_search"] = web_analysis
 
     return jsonify(response_payload), 201
+
+
+@prediction_bp.post("/screen-analysis")
+def screen_analysis_only():
+    """Analyze chart screen directly for S/R levels, neighbour patterns, and trend."""
+    if "image" not in request.files:
+        return jsonify(
+            {"success": False, "error": {"code": "missing_image", "message": "Select an image file."}}
+        ), 400
+
+    uploaded = request.files["image"]
+    try:
+        image_bytes, _ = validate_image_upload(
+            uploaded,
+            max_bytes=current_app.config["MAX_CONTENT_LENGTH"],
+            image_size=current_app.config["IMAGE_SIZE"],
+        )
+    except (ValueError, ImageValidationError) as exc:
+        return jsonify({"success": False, "error": {"code": "invalid_image", "message": str(exc)}}), 400
+
+    screen_service = current_app.extensions.get("screen_analysis_service")
+    if not screen_service:
+        return jsonify({"success": False, "error": "Screen analysis service is unavailable."}), 503
+
+    try:
+        analysis = screen_service.analyze_chart(image_bytes)
+        return jsonify({"success": True, "data": analysis.to_dict()}), 200
+    except Exception as exc:
+        LOGGER.exception("Screen analysis failed")
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
 @prediction_bp.route("/web-search", methods=["GET", "POST"])

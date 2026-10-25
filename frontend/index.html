@@ -66,6 +66,57 @@
           <div class="confidence-block"><div class="confidence-row"><span>Model score</span><strong id="result-confidence"></strong></div><div class="progress-track"><span id="confidence-bar" class="progress-fill"></span></div><p class="muted small">This score is an image classifier output and not guaranteed trading advice.</p></div>
           <dl class="result-details"><div><dt>Symbol</dt><dd id="result-symbol">—</dd></div><div><dt>Timeframe</dt><dd id="result-timeframe">—</dd></div><div><dt>Model version</dt><dd id="result-version">—</dd></div><div><dt>Recorded</dt><dd id="result-time">—</dd></div></dl>
 
+          <!-- Screen Analysis & Technical Structure Card -->
+          <div id="screen-analysis-box" class="screen-analysis-card hidden">
+            <div class="screen-card-header">
+              <span class="screen-card-title">📈 Screen Analysis: S/R & Neighbour Candlestick Patterns</span>
+              <span id="confluence-badge" class="badge"></span>
+            </div>
+            <div class="screen-analysis-grid">
+              <!-- Pillar 1: Neighbour Pattern -->
+              <div class="analysis-pillar">
+                <span class="pillar-label">NEIGHBOUR PATTERN</span>
+                <div class="pillar-content">
+                  <h4 id="pattern-name">—</h4>
+                  <span id="pattern-type-badge" class="badge"></span>
+                  <p id="pattern-desc" class="pillar-desc"></p>
+                </div>
+              </div>
+              <!-- Pillar 2: Support & Resistance -->
+              <div class="analysis-pillar">
+                <span class="pillar-label">SUPPORT & RESISTANCE</span>
+                <div class="pillar-content">
+                  <div class="sr-badges-row">
+                    <span id="nearest-support-badge" class="sr-badge sr-support">Support: —</span>
+                    <span id="nearest-resistance-badge" class="sr-badge sr-resistance">Resistance: —</span>
+                  </div>
+                  <p id="sr-summary" class="pillar-desc"></p>
+                </div>
+              </div>
+              <!-- Pillar 3: Market Trend -->
+              <div class="analysis-pillar">
+                <span class="pillar-label">MARKET TREND STRUCTURE</span>
+                <div class="pillar-content">
+                  <h4 id="trend-name">—</h4>
+                  <div class="trend-strength-row">
+                    <span>Strength</span>
+                    <strong id="trend-strength-label"></strong>
+                  </div>
+                  <div class="progress-track"><span id="trend-strength-bar" class="progress-fill"></span></div>
+                </div>
+              </div>
+            </div>
+            <!-- Annotated Chart Preview -->
+            <div id="annotated-chart-container" class="annotated-chart-container">
+              <div class="annotated-header">
+                <span>👁️ AI Annotated Screen View (S/R Levels & Detected Pattern Highlight)</span>
+              </div>
+              <div class="annotated-img-wrap">
+                <img id="annotated-chart-img" alt="Annotated Candlestick Chart" class="annotated-chart-img" />
+              </div>
+            </div>
+          </div>
+
           <!-- Web Search Market Analysis Result -->
           <div id="web-insight-box" class="web-insight-card hidden">
             <div class="web-insight-header">

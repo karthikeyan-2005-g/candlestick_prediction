@@ -476,6 +476,95 @@ function showPrediction(result) {
       getPageUrl(`prediction.html?id=${encodeURIComponent(result.prediction_id)}`);
   }
 
+  // Screen Analysis & S/R Patterns rendering
+  const screenBox = document.querySelector("#screen-analysis-box");
+  if (screenBox) {
+    const sa = result.screen_analysis;
+    if (sa) {
+      screenBox.classList.remove("hidden");
+
+      // Confluence badge
+      const confBadge = document.querySelector("#confluence-badge");
+      if (confBadge) {
+        confBadge.textContent = `${sa.confluence_direction} (${Math.round(sa.confluence_score * 100)}% confluence)`;
+        const cTone = (sa.confluence_direction || "").toLowerCase().includes("bullish")
+          ? "bullish"
+          : (sa.confluence_direction || "").toLowerCase().includes("bearish")
+          ? "bearish"
+          : "uncertain";
+        confBadge.className = `badge ${cTone}`;
+      }
+
+      // Neighbour pattern
+      if (sa.neighbour_pattern) {
+        const pName = document.querySelector("#pattern-name");
+        if (pName) pName.textContent = sa.neighbour_pattern.name || "Standard";
+
+        const pType = document.querySelector("#pattern-type-badge");
+        if (pType) {
+          pType.textContent = `${sa.neighbour_pattern.pattern_type} (${sa.neighbour_pattern.reliability || "Normal"})`;
+          const pTone = (sa.neighbour_pattern.pattern_type || "").toLowerCase().includes("bullish")
+            ? "bullish"
+            : (sa.neighbour_pattern.pattern_type || "").toLowerCase().includes("bearish")
+            ? "bearish"
+            : "uncertain";
+          pType.className = `badge ${pTone}`;
+        }
+
+        const pDesc = document.querySelector("#pattern-desc");
+        if (pDesc) pDesc.textContent = sa.neighbour_pattern.description || "";
+      }
+
+      // Support & Resistance
+      if (sa.support_resistance) {
+        const sr = sa.support_resistance;
+        const suppBadge = document.querySelector("#nearest-support-badge");
+        if (suppBadge) {
+          suppBadge.textContent = sr.nearest_support != null
+            ? `Nearest Support: S1 (Zone ~${sr.nearest_support}px)`
+            : "Support: Dynamic Base";
+        }
+
+        const resBadge = document.querySelector("#nearest-resistance-badge");
+        if (resBadge) {
+          resBadge.textContent = sr.nearest_resistance != null
+            ? `Nearest Resist: R1 (Zone ~${sr.nearest_resistance}px)`
+            : "Resist: Dynamic High";
+        }
+
+        const srSummary = document.querySelector("#sr-summary");
+        if (srSummary) {
+          srSummary.textContent = sr.position_summary || "Consolidation zone.";
+        }
+      }
+
+      // Market trend
+      if (sa.market_trend) {
+        const mt = sa.market_trend;
+        const trendName = document.querySelector("#trend-name");
+        if (trendName) trendName.textContent = mt.direction || "Consolidation";
+
+        const trendLabel = document.querySelector("#trend-strength-label");
+        if (trendLabel) trendLabel.textContent = `${mt.strength_pct}%`;
+
+        const trendBar = document.querySelector("#trend-strength-bar");
+        if (trendBar) trendBar.style.width = `${Math.max(0, Math.min(100, mt.strength_pct))}%`;
+      }
+
+      // Annotated image
+      const annotatedImg = document.querySelector("#annotated-chart-img");
+      const annotatedContainer = document.querySelector("#annotated-chart-container");
+      if (annotatedImg && sa.annotated_image) {
+        annotatedImg.src = sa.annotated_image;
+        if (annotatedContainer) annotatedContainer.classList.remove("hidden");
+      } else if (annotatedContainer) {
+        annotatedContainer.classList.add("hidden");
+      }
+    } else {
+      screenBox.classList.add("hidden");
+    }
+  }
+
   // Web search market intelligence rendering
   const webInsightBox = document.querySelector("#web-insight-box");
   if (webInsightBox) {
