@@ -56,11 +56,23 @@ class SupportResistanceInfo:
 
 
 @dataclass
+class TechnicalIndicators:
+    rsi_estimate: float
+    rsi_condition: str
+    ema_trend: str
+    golden_pocket_near: bool
+    fibonacci_status: str
+    fibonacci_levels: dict[str, int]
+    bias: float
+
+
+@dataclass
 class ScreenAnalysisResult:
     candles_detected: int
     neighbour_pattern: dict[str, Any]
     market_trend: dict[str, Any]
     support_resistance: dict[str, Any]
+    technical_indicators: dict[str, Any]
     confluence_score: float
     confluence_direction: str
     annotated_image: str
@@ -71,6 +83,7 @@ class ScreenAnalysisResult:
             "neighbour_pattern": self.neighbour_pattern,
             "market_trend": self.market_trend,
             "support_resistance": self.support_resistance,
+            "technical_indicators": self.technical_indicators,
             "confluence_score": round(self.confluence_score, 4),
             "confluence_direction": self.confluence_direction,
             "annotated_image": self.annotated_image,
@@ -102,9 +115,12 @@ class ScreenAnalysisService:
         # 4. Market Trend Analysis
         trend = self._analyze_market_trend(candles, h)
 
-        # 5. Confluence Score Calculation
-        # Screen analysis combines pattern bias (+0.50 to -0.50), SR bias (+0.25 to -0.25), and trend bias (+0.25 to -0.25)
-        raw_confluence = 0.5 + (0.45 * pattern.bias) + (0.30 * sr_info.bias) + (0.25 * trend.bias)
+        # 5. Technical Indicators Analysis (Fibonacci Retracement, RSI Proxy, EMA Alignment)
+        indicators = self._analyze_technical_indicators(candles, trend, h)
+
+        # 6. Confluence Score Calculation
+        # Combines pattern (+0.50 to -0.50), SR (+0.25 to -0.25), trend (+0.25 to -0.25), and indicators (+0.25 to -0.25)
+        raw_confluence = 0.5 + (0.35 * pattern.bias) + (0.25 * sr_info.bias) + (0.20 * trend.bias) + (0.20 * indicators.bias)
         confluence_score = max(0.05, min(0.95, raw_confluence))
 
         if confluence_score >= 0.53:
@@ -114,14 +130,17 @@ class ScreenAnalysisService:
         else:
             confluence_direction = "Neutral / Rangebound"
 
-        # 6. Generate Annotated Chart
-        annotated_b64 = self._generate_annotated_chart(pil_img, candles, sr_info, pattern, trend, confluence_direction)
+        # 7. Generate Annotated Chart
+        annotated_b64 = self._generate_annotated_chart(
+            pil_img, candles, sr_info, pattern, trend, indicators, confluence_direction
+        )
 
         return ScreenAnalysisResult(
             candles_detected=len(candles),
             neighbour_pattern=asdict(pattern),
             market_trend=asdict(trend),
             support_resistance=asdict(sr_info),
+            technical_indicators=asdict(indicators),
             confluence_score=confluence_score,
             confluence_direction=confluence_direction,
             annotated_image=annotated_b64,
@@ -607,6 +626,138 @@ class ScreenAnalysisService:
             bias=round(float(bias), 4),
         )
 
+    def _analyze_technical_indicators(
+        self, candles: list[CandleInfo], trend: MarketTrend, chart_h: int
+    ) -> TechnicalIndicators:
+        if len(candles) < 2:
+            return TechnicalIndicators(
+                rsi_estimate=50.0,
+                rsi_condition="Neutral Momentum",
+                ema_trend="Neutral EMA",
+                golden_pocket_near=False,
+                fibonacci_status="Insufficient candle data",
+                fibonacci_levels={},
+                bias=0.0,
+            )
+
+        # 1. Fibonacci Retracements
+        y_highs = [c.y_high for c in candles]
+        y_lows = [c.y_low for c in candles]
+        swing_high_y = min(y_highs)  # lowest y = highest price
+        swing_low_y = max(y_lows)   # highest y = lowest price
+        span_h = max(10, swing_low_y - swing_high_y)
+
+        fib_ratios = {"23.6%": 0.236, "38.2%": 0.382, "50.0%": 0.500, "61.8%": 0.618, "78.6%": 0.786}
+        fib_levels: dict[str, int] = {}
+        for name, ratio in fib_ratios.items():
+            if "Uptrend" in trend.direction:
+                lvl = int(swing_high_y + ratio * span_h)
+            elif "Downtrend" in trend.direction:
+                lvl = int(swing_low_y - ratio * span_h)
+            else:
+                lvl = int(swing_high_y + ratio * span_h)
+            fib_levels[name] = lvl
+
+        latest_y = candles[-1].y_close
+        golden_618 = fib_levels.get("61.8%", swing_high_y + int(0.618 * span_h))
+        golden_50 = fib_levels.get("50.0%", swing_high_y + int(0.500 * span_h))
+        dist_to_golden = min(abs(latest_y - golden_618), abs(latest_y - golden_50))
+        golden_pocket_near = dist_to_golden <= max(8, int(span_h * 0.05))
+
+        fib_bias = 0.0
+        if golden_pocket_near:
+            if "Uptrend" in trend.direction:
+                fib_status = "Testing 61.8% Golden Pocket Support (Bullish Reversal Setup)"
+                fib_bias = +0.22
+            elif "Downtrend" in trend.direction:
+                fib_status = "Testing 61.8% Golden Pocket Resistance (Bearish Rejection Setup)"
+                fib_bias = -0.22
+            else:
+                fib_status = "At 50-61.8% Equilibrium Pivot Zone"
+                fib_bias = +0.10
+        elif latest_y < fib_levels.get("38.2%", 0):
+            fib_status = "Upper Fibonacci Bullish Extension Zone"
+            fib_bias = +0.10
+        elif latest_y > fib_levels.get("78.6%", chart_h):
+            fib_status = "Deep Fibonacci Retracement / Lower Band Risk"
+            fib_bias = -0.10
+        else:
+            fib_status = "Mid-Range Fibonacci Zone"
+            fib_bias = 0.0
+
+        # 2. RSI Proxy Oscillator Estimate
+        gains = []
+        losses = []
+        for i in range(1, len(candles)):
+            # diff in price = prev_y - curr_y (positive means price rose)
+            price_change = candles[i - 1].y_close - candles[i].y_close
+            if price_change > 0:
+                gains.append(price_change)
+                losses.append(0.0)
+            else:
+                gains.append(0.0)
+                losses.append(abs(price_change))
+
+        avg_gain = float(np.mean(gains)) if gains else 0.0
+        avg_loss = float(np.mean(losses)) if losses else 0.0
+        if avg_loss == 0.0:
+            rsi = 100.0 if avg_gain > 0 else 50.0
+        else:
+            rs = avg_gain / avg_loss
+            rsi = 100.0 - (100.0 / (1.0 + rs))
+
+        rsi_estimate = round(max(5.0, min(95.0, float(rsi))), 1)
+        rsi_bias = 0.0
+        if rsi_estimate <= 32:
+            rsi_condition = f"Oversold ({rsi_estimate}) - Strong Buying Exhaustion Reversal"
+            rsi_bias = +0.20
+        elif rsi_estimate >= 68:
+            rsi_condition = f"Overbought ({rsi_estimate}) - Overextended Momentum"
+            rsi_bias = -0.20
+        else:
+            rsi_condition = f"Neutral Momentum ({rsi_estimate})"
+            rsi_bias = (rsi_estimate - 50.0) / 100.0 * 0.20
+
+        # 3. EMA Trend Alignment
+        alpha_fast = 2.0 / (3 + 1.0)
+        alpha_slow = 2.0 / (7 + 1.0)
+        fast_ema = None
+        slow_ema = None
+        for c in candles:
+            price = float((c.y_high + c.y_low) / 2.0)
+            if fast_ema is None:
+                fast_ema = price
+                slow_ema = price
+            else:
+                fast_ema = alpha_fast * price + (1.0 - alpha_fast) * fast_ema
+                slow_ema = alpha_slow * price + (1.0 - alpha_slow) * slow_ema
+
+        ema_bias = 0.0
+        if fast_ema is not None and slow_ema is not None:
+            if fast_ema < slow_ema - 2:  # fast EMA price is higher than slow EMA
+                ema_trend = "Bullish EMA Alignment (Fast EMA > Slow EMA)"
+                ema_bias = +0.15
+            elif fast_ema > slow_ema + 2:
+                ema_trend = "Bearish EMA Alignment (Fast EMA < Slow EMA)"
+                ema_bias = -0.15
+            else:
+                ema_trend = "Converging EMAs (Consolidation Squeeze)"
+                ema_bias = 0.0
+        else:
+            ema_trend = "Neutral EMA"
+
+        combined_indicator_bias = round(0.40 * fib_bias + 0.35 * rsi_bias + 0.25 * ema_bias, 4)
+
+        return TechnicalIndicators(
+            rsi_estimate=rsi_estimate,
+            rsi_condition=rsi_condition,
+            ema_trend=ema_trend,
+            golden_pocket_near=golden_pocket_near,
+            fibonacci_status=fib_status,
+            fibonacci_levels=fib_levels,
+            bias=combined_indicator_bias,
+        )
+
     def _generate_annotated_chart(
         self,
         base_img: Image.Image,
@@ -614,6 +765,7 @@ class ScreenAnalysisService:
         sr_info: SupportResistanceInfo,
         pattern: NeighbourPattern,
         trend: MarketTrend,
+        indicators: TechnicalIndicators,
         confluence_dir: str,
     ) -> str:
         annotated = base_img.copy()
@@ -634,7 +786,26 @@ class ScreenAnalysisService:
             draw.rectangle([(w - 105, r_y - 16), (w - 10, r_y + 4)], fill=(239, 83, 80, 230))
             draw.text((w - 100, r_y - 14), label, fill=(255, 255, 255))
 
-        # 3. Highlight Neighbour Candlestick Pattern on latest candles
+        # 3. Draw Fibonacci Golden Pocket Level (61.8% Amber Dashed Line)
+        if "61.8%" in indicators.fibonacci_levels:
+            fib_y = indicators.fibonacci_levels["61.8%"]
+            draw.line([(0, fib_y), (w, fib_y)], fill=(255, 193, 7, 200), width=1)
+            draw.rectangle([(w - 175, fib_y - 14), (w - 10, fib_y + 4)], fill=(255, 193, 7, 220))
+            draw.text((w - 170, fib_y - 13), "FIB 61.8% GOLDEN POCKET", fill=(20, 25, 35))
+
+        # 4. Draw Fast Dynamic EMA Curve (Cyan Line)
+        if len(candles) >= 3:
+            alpha = 2.0 / (4 + 1.0)
+            ema_val = None
+            ema_points = []
+            for c in candles:
+                c_mid = (c.y_open + c.y_close) / 2.0
+                ema_val = c_mid if ema_val is None else alpha * c_mid + (1.0 - alpha) * ema_val
+                ema_points.append((c.x_center, int(ema_val)))
+            for p1, p2 in zip(ema_points[:-1], ema_points[1:]):
+                draw.line([p1, p2], fill=(3, 169, 244, 210), width=2)
+
+        # 5. Highlight Neighbour Candlestick Pattern on latest candles
         if candles:
             target_candles = candles[-3:] if len(candles) >= 3 else candles
             min_x = max(0, min(c.x_left for c in target_candles) - 4)
@@ -650,9 +821,9 @@ class ScreenAnalysisService:
             draw.rectangle([(min_x, max(4, min_y - 20)), (min_x + b_width, min_y)], fill=box_color)
             draw.text((min_x + 6, max(6, min_y - 17)), pattern_badge, fill=(255, 255, 255))
 
-        # 4. Top Information Banner
+        # 6. Top Information Banner
         banner_h = 32
-        banner_bg = (18, 24, 38, 230)
+        banner_bg = (18, 24, 38, 235)
         draw.rectangle([(0, 0), (w, banner_h)], fill=banner_bg)
 
         # Confluence direction tag
@@ -660,8 +831,8 @@ class ScreenAnalysisService:
         draw.rectangle([(10, 5), (145, 27)], fill=conf_color)
         draw.text((16, 8), f"AI: {confluence_dir[:9]}", fill=(255, 255, 255))
 
-        # Trend & Strength tag
-        draw.text((155, 8), f"Trend: {trend.direction} ({trend.strength_pct}%)", fill=(220, 225, 235))
+        # Trend & RSI tag
+        draw.text((155, 8), f"Trend: {trend.direction} | RSI: {indicators.rsi_estimate}", fill=(220, 225, 235))
 
         # Pattern tag
         draw.text((w - 220, 8), f"Pattern: {pattern.name[:18]}", fill=(255, 235, 59))

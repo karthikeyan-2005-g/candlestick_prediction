@@ -551,6 +551,28 @@ function showPrediction(result) {
         if (trendBar) trendBar.style.width = `${Math.max(0, Math.min(100, mt.strength_pct))}%`;
       }
 
+      // Technical indicators & Fibonacci
+      if (sa.technical_indicators) {
+        const ti = sa.technical_indicators;
+        const rsiBadge = document.querySelector("#rsi-badge");
+        if (rsiBadge) {
+          rsiBadge.textContent = `RSI: ${ti.rsi_estimate}`;
+          const rsiTone = ti.rsi_estimate <= 32 ? "bullish" : ti.rsi_estimate >= 68 ? "bearish" : "uncertain";
+          rsiBadge.className = `sr-badge ${rsiTone === "bullish" ? "sr-support" : (rsiTone === "bearish" ? "sr-resistance" : "sr-support")}`;
+        }
+
+        const emaBadge = document.querySelector("#ema-badge");
+        if (emaBadge) {
+          emaBadge.textContent = ti.ema_trend.includes("Bullish") ? "EMA: Bullish" : (ti.ema_trend.includes("Bearish") ? "EMA: Bearish" : "EMA: Neutral");
+          emaBadge.className = `sr-badge ${ti.ema_trend.includes("Bullish") ? "sr-support" : (ti.ema_trend.includes("Bearish") ? "sr-resistance" : "sr-support")}`;
+        }
+
+        const fibSummary = document.querySelector("#fib-summary");
+        if (fibSummary) {
+          fibSummary.textContent = ti.fibonacci_status || "Fibonacci levels calculated.";
+        }
+      }
+
       // Annotated image
       const annotatedImg = document.querySelector("#annotated-chart-img");
       const annotatedContainer = document.querySelector("#annotated-chart-container");

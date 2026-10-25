@@ -145,6 +145,7 @@ def predict():
         "market_trend": screen_result.market_trend if screen_result else None,
         "support_resistance": screen_result.support_resistance if screen_result else None,
         "neighbour_pattern": screen_result.neighbour_pattern if screen_result else None,
+        "technical_indicators": screen_result.technical_indicators if screen_result else None,
         "message": (
             "Technical and image-classification output combining computer vision S/R analysis, "
             "neighbour candlestick patterns, and trained neural network features. Not financial advice."

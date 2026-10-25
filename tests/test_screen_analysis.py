@@ -41,6 +41,8 @@ def test_screen_analysis_detects_candles_and_patterns():
     assert "strength_pct" in res.market_trend
     assert "support_levels" in res.support_resistance
     assert "resistance_levels" in res.support_resistance
+    assert "rsi_estimate" in res.technical_indicators
+    assert "fibonacci_status" in res.technical_indicators
     assert 0.0 <= res.confluence_score <= 1.0
     assert res.annotated_image.startswith("data:image/png;base64,")
 
