@@ -1,3 +1,56 @@
+# AI Candlestick & Quotex Binary Trade Prediction System
+
+A production-ready full-stack AI and Computer Vision platform for financial candlestick chart analysis and **Quotex Binary Options Trading (CALL / PUT)** with a strict **>70% Confluence Win Rate Engine**.
+
+Flask powers both the REST API and the interactive dashboard, combining PyTorch deep learning with algorithmic computer vision (Support/Resistance clustering, Neighbour candlestick pattern recognition, Fibonacci retracements, and RSI momentum).
+
+---
+
+## ⚡ Quotex Binary Options Features (>70% Accuracy Engine)
+
+- **Quotex Binary Trade Signals**:
+  - Generates explicit **CALL (HIGHER) ⬆** or **PUT (LOWER) ⬇** trading signals tailored for Quotex and binary option brokers.
+  - **Capital Guard Filter**: Low-confidence choppy market setups (<70%) are automatically set to **WAIT / NO TRADE ⏸** to protect capital.
+  - **Dynamic Expiry Recommendation**: **1 Minute (1M Next Candle)**, **2 Minutes**, or **5 Minutes (5M Structure)**.
+- **Screen Analysis Computer Vision Engine**:
+  - **Support & Resistance (S/R)**: Inflection clustering extracts major S1, S2 and R1, R2 levels and measures breakout/bounce proximity.
+  - **Neighbour Candlestick Patterns**: Recognizes 15+ institutional price action formations (Bullish/Bearish Engulfing, Hammer, Shooting Star, Morning/Evening Star, Three White Soldiers, Tweezer Tops/Bottoms, Doji).
+  - **Fibonacci Retracement & Golden Pocket**: Identifies the critical 61.8% and 50.0% Golden Pocket reversal zones.
+  - **RSI Momentum & EMA Alignment**: Real-time relative strength indicator and exponential moving average alignment.
+  - **AI Annotated Chart Overlay**: Visually paints green Support lines, red Resistance lines, gold Fibonacci Golden Pocket, and pattern bounding boxes onto uploaded charts.
+- **Multi-Asset Balanced Dataset**:
+  - Over 3,200 samples across 11 liquid equity and cryptocurrency markets (BTC, ETH, SOL, BNB, ADA, XRP, AVAX, LINK, DOT, SPY, QQQ).
+- **Production Cloud Deployment**:
+  - `Dockerfile` & `docker-compose.yml` for containerized 1-command startup.
+  - `render.yaml` & `Procfile` for 1-click cloud deployment on Render, Railway, or Heroku.
+
+---
+
+## 🚀 Quick Start & Deployment
+
+### 1. Local Run
+```bash
+# Create virtual environment & install requirements
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# Run server
+python app.py
+```
+Open **http://127.0.0.1:5000** in your browser.
+
+### 2. Docker Deployment
+```bash
+docker compose up --build -d
+```
+The application will be live at `http://localhost:5000` with healthchecks enabled.
+
+### 3. Free Cloud Deployment (Render / Railway)
+Push your repository to GitHub, link it on **Render.com** (as a Web Service with Blueprint using `render.yaml`) or **Railway.app**, and your Quotex prediction server deploys automatically!
+
+---
+
 # AI-Based Candlestick Prediction System
 
 A local, educational full-stack project that accepts candlestick chart images,

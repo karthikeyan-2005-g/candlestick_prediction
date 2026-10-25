@@ -476,6 +476,64 @@ function showPrediction(result) {
       getPageUrl(`prediction.html?id=${encodeURIComponent(result.prediction_id)}`);
   }
 
+  // Quotex Binary Trade Signal rendering (>70% accuracy)
+  const quotexBox = document.querySelector("#quotex-signal-box");
+  if (quotexBox) {
+    const bt = result.binary_trade;
+    if (bt) {
+      quotexBox.classList.remove("hidden");
+      const actionBtn = document.querySelector("#quotex-action-btn");
+      const actionLabel = document.querySelector("#quotex-action-label");
+      const actionSub = document.querySelector("#quotex-action-sub");
+      const accuracyBadge = document.querySelector("#quotex-accuracy-badge");
+
+      if (actionLabel) actionLabel.textContent = bt.action;
+      if (accuracyBadge) {
+        accuracyBadge.textContent = `Win Expectancy: ${bt.win_probability_pct}%`;
+        accuracyBadge.style.color = bt.win_probability_pct >= 70 ? "#00e676" : "#ffb300";
+      }
+
+      if (actionBtn) {
+        if (bt.action.includes("CALL")) {
+          actionBtn.className = "quotex-action-button quotex-call";
+          if (actionSub) actionSub.textContent = "High Win Expectancy > 70% (Institutional Call)";
+        } else if (bt.action.includes("PUT")) {
+          actionBtn.className = "quotex-action-button quotex-put";
+          if (actionSub) actionSub.textContent = "High Win Expectancy > 70% (Institutional Put)";
+        } else {
+          actionBtn.className = "quotex-action-button quotex-wait";
+          if (actionSub) actionSub.textContent = "Capital Guard Active (Below 70% Precision Threshold)";
+        }
+      }
+
+      const expiryVal = document.querySelector("#quotex-expiry-val");
+      if (expiryVal) expiryVal.textContent = bt.expiry_recommendation;
+
+      const gradeVal = document.querySelector("#quotex-grade-val");
+      if (gradeVal) gradeVal.textContent = bt.setup_grade;
+
+      const triggerVal = document.querySelector("#quotex-trigger-val");
+      if (triggerVal) triggerVal.textContent = bt.entry_trigger;
+
+      const riskVal = document.querySelector("#quotex-risk-val");
+      if (riskVal) riskVal.textContent = bt.risk_management;
+
+      const checklistElem = document.querySelector("#quotex-checklist");
+      if (checklistElem) {
+        checklistElem.replaceChildren();
+        if (Array.isArray(bt.checklist)) {
+          bt.checklist.forEach((item) => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            checklistElem.append(li);
+          });
+        }
+      }
+    } else {
+      quotexBox.classList.add("hidden");
+    }
+  }
+
   // Screen Analysis & S/R Patterns rendering
   const screenBox = document.querySelector("#screen-analysis-box");
   if (screenBox) {

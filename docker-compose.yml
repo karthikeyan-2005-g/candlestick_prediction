@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: candlestick_quotex_predictor
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - LOG_LEVEL=INFO
+      - SECRET_KEY=quotex-binary-trading-production-secret-2026
+      - SQLALCHEMY_DATABASE_URI=sqlite:///candlestick.db
+      - CONFIDENCE_THRESHOLD=0.60
+    volumes:
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

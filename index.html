@@ -66,6 +66,47 @@
           <div class="confidence-block"><div class="confidence-row"><span>Model score</span><strong id="result-confidence"></strong></div><div class="progress-track"><span id="confidence-bar" class="progress-fill"></span></div><p class="muted small">This score is an image classifier output and not guaranteed trading advice.</p></div>
           <dl class="result-details"><div><dt>Symbol</dt><dd id="result-symbol">—</dd></div><div><dt>Timeframe</dt><dd id="result-timeframe">—</dd></div><div><dt>Model version</dt><dd id="result-version">—</dd></div><div><dt>Recorded</dt><dd id="result-time">—</dd></div></dl>
 
+          <!-- Quotex Binary Trade Signal Card (>70% Accuracy Engine) -->
+          <div id="quotex-signal-box" class="quotex-card hidden">
+            <div class="quotex-card-header">
+              <div class="quotex-title-wrap">
+                <span class="quotex-logo-badge">QUOTEX BINARY</span>
+                <span class="quotex-title">Next Candle Trade Signal</span>
+              </div>
+              <span id="quotex-accuracy-badge" class="quotex-accuracy-pill">Win Expectancy: —</span>
+            </div>
+
+            <div class="quotex-main-row">
+              <div id="quotex-action-btn" class="quotex-action-button quotex-wait">
+                <span id="quotex-action-label" class="quotex-action-text">WAIT / NO TRADE</span>
+                <span id="quotex-action-sub" class="quotex-action-subtext">Capital Guard Active</span>
+              </div>
+              <div class="quotex-meta-grid">
+                <div class="quotex-meta-item">
+                  <span class="meta-label">EXPIRY TIME</span>
+                  <strong id="quotex-expiry-val">1 Minute (1M)</strong>
+                </div>
+                <div class="quotex-meta-item">
+                  <span class="meta-label">SETUP QUALITY</span>
+                  <strong id="quotex-grade-val">A+ Confluence</strong>
+                </div>
+                <div class="quotex-meta-item">
+                  <span class="meta-label">ENTRY TRIGGER</span>
+                  <span id="quotex-trigger-val">Enter at candle open</span>
+                </div>
+                <div class="quotex-meta-item">
+                  <span class="meta-label">RISK MANAGEMENT</span>
+                  <span id="quotex-risk-val">Flat 1-2% stake</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="quotex-checklist-wrap">
+              <span class="quotex-checklist-label">CONFLUENCE CHECKLIST (&gt;70% ACCURACY):</span>
+              <ul id="quotex-checklist" class="quotex-checklist"></ul>
+            </div>
+          </div>
+
           <!-- Screen Analysis & Technical Structure Card -->
           <div id="screen-analysis-box" class="screen-analysis-card hidden">
             <div class="screen-card-header">

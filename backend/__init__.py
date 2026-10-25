@@ -6,6 +6,7 @@ from typing import Any
 from flask import Flask
 
 from backend.extensions import db
+from backend.services.binary_trade_service import BinaryTradeService
 from backend.services.prediction_service import PredictionService
 from backend.services.screen_analysis_service import ScreenAnalysisService
 from backend.services.web_search_service import WebSearchService
@@ -24,6 +25,7 @@ def create_app(config_object: type | object | None = None) -> Flask:
     )
 
     app.extensions["screen_analysis_service"] = ScreenAnalysisService()
+    app.extensions["binary_trade_service"] = BinaryTradeService()
     app.extensions["web_search_service"] = WebSearchService()
 
     from backend.database import models as _models  # noqa: F401

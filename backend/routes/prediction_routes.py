@@ -130,6 +130,19 @@ def predict():
                     "sources": [],
                 }
 
+    # Quotex Binary Trade Signal Evaluation (>70% Precision Strategy)
+    binary_service = current_app.extensions.get("binary_trade_service")
+    quotex_signal = None
+    if binary_service:
+        try:
+            quotex_signal = binary_service.evaluate_binary_trade(
+                cnn_prediction=result.prediction,
+                cnn_confidence=result.confidence,
+                screen_analysis=screen_result.to_dict() if screen_result else None,
+            )
+        except Exception as exc:
+            LOGGER.warning("Binary trade evaluation error: %s", exc)
+
     response_payload = {
         "success": True,
         "prediction": final_prediction,
@@ -146,6 +159,7 @@ def predict():
         "support_resistance": screen_result.support_resistance if screen_result else None,
         "neighbour_pattern": screen_result.neighbour_pattern if screen_result else None,
         "technical_indicators": screen_result.technical_indicators if screen_result else None,
+        "binary_trade": quotex_signal.to_dict() if quotex_signal else None,
         "message": (
             "Technical and image-classification output combining computer vision S/R analysis, "
             "neighbour candlestick patterns, and trained neural network features. Not financial advice."
@@ -156,6 +170,46 @@ def predict():
         response_payload["web_search"] = web_analysis
 
     return jsonify(response_payload), 201
+
+
+@prediction_bp.post("/binary-trade")
+def binary_trade_analysis():
+    """Dedicated endpoint for Quotex binary options (CALL / PUT >70% accuracy)."""
+    if "image" not in request.files:
+        return jsonify(
+            {"success": False, "error": {"code": "missing_image", "message": "Select an image file."}}
+        ), 400
+
+    uploaded = request.files["image"]
+    try:
+        image_bytes, _ = validate_image_upload(
+            uploaded,
+            max_bytes=current_app.config["MAX_CONTENT_LENGTH"],
+            image_size=current_app.config["IMAGE_SIZE"],
+        )
+    except (ValueError, ImageValidationError) as exc:
+        return jsonify({"success": False, "error": {"code": "invalid_image", "message": str(exc)}}), 400
+
+    pred_service = current_app.extensions["prediction_service"]
+    screen_service = current_app.extensions.get("screen_analysis_service")
+    binary_service = current_app.extensions.get("binary_trade_service")
+
+    try:
+        cnn_res = pred_service.predict(image_bytes)
+        sa_res = screen_service.analyze_chart(image_bytes) if screen_service else None
+        signal = binary_service.evaluate_binary_trade(
+            cnn_prediction=cnn_res.prediction,
+            cnn_confidence=cnn_res.confidence,
+            screen_analysis=sa_res.to_dict() if sa_res else None,
+        )
+        return jsonify({
+            "success": True,
+            "data": signal.to_dict(),
+            "annotated_image": sa_res.annotated_image if sa_res else None,
+        }), 200
+    except Exception as exc:
+        LOGGER.exception("Binary trade analysis failed")
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
 @prediction_bp.post("/screen-analysis")

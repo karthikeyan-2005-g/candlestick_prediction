@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: candlestick-quotex-prediction
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt gunicorn"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 \"app:create_application()\""
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.60"
+      - key: SQLALCHEMY_DATABASE_URI
+        value: sqlite:///candlestick.db
